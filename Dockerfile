@@ -1,23 +1,22 @@
-# Stage 1: Build Stage using OpenJDK 21 & Maven
+# Stage 1: Build Stage
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copy configuration and source files
+# Dependency Caching Step
 COPY pom.xml .
-COPY src ./src
+RUN mvn dependency:go-offline -B
 
-# Build the WAR package skipping tests
+# Copy Source and Package JAR
+COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Stage 2: Runtime Stage using OpenJDK 21
+# Stage 2: Runtime Stage
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copy the generated WAR file from build stage
-COPY --from=build /app/target/StudentRegistrationService-0.0.1-SNAPSHOT.war app.war
+# Copy executable JAR file from build stage
+COPY --from=build /app/target/StudentRegistrationService-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose port (Spring Boot default port 8080)
 EXPOSE 8080
 
-# Execute the application
-ENTRYPOINT ["java", "-jar", "app.war"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
