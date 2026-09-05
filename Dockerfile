@@ -1,13 +1,23 @@
-# Build Stage using Maven and Java 17
-FROM maven:3.8.5-openjdk-17 AS build
+# Stage 1: Build Stage using OpenJDK 21 & Maven
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
+
+# Copy configuration and source files
 COPY pom.xml .
 COPY src ./src
+
+# Build the WAR package skipping tests
 RUN mvn clean package -DskipTests
 
-# Run Stage using Official Eclipse Temurin Java 17 JRE
-FROM eclipse-temurin:17-jre
+# Stage 2: Runtime Stage using OpenJDK 21
+FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+
+# Copy the generated WAR file from build stage
+COPY --from=build /app/target/StudentRegistrationService-0.0.1-SNAPSHOT.war app.war
+
+# Expose port (Spring Boot default port 8080)
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Execute the application
+ENTRYPOINT ["java", "-jar", "app.war"]
